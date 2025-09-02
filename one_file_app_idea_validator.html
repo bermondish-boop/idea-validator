@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Idea Validator — v1</title>
+  <meta name="description" content="A tiny one‑file app to quickly score startup ideas and save them locally." />
+  <style>
+    :root{
+      --bg:#0b0f14;--card:#121723;--muted:#98a2b3;--text:#e6edf3;--accent:#7c3aed;--accent2:#22d3ee;--ok:#10b981;--bad:#ef4444;
+      --radius:16px;--shadow:0 10px 30px rgba(0,0,0,.35);--border:1px solid rgba(255,255,255,.06)
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;background:radial-gradient(1200px 600px at 10% -10%,rgba(124,58,237,.25),transparent),radial-gradient(1000px 500px at 120% 10%,rgba(34,211,238,.25),transparent),var(--bg);color:var(--text)}
+    header{max-width:960px;margin:40px auto 20px;padding:0 16px}
+    h1{font-size:36px;margin:0 0 6px}
+    .sub{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px;max-width:960px;margin:0 auto;padding:16px}
+    @media(min-width:900px){.grid{grid-template-columns:1.2fr .8fr}}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card .inner{padding:18px}
+    label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
+    input, textarea, select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#0f1420;color:var(--text);outline:none}
+    textarea{min-height:88px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .btn{cursor:pointer;user-select:none;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(124,58,237,.12),rgba(124,58,237,.08));color:#fff;font-weight:600}
+    .btn:hover{transform:translateY(-1px)}
+    .btn.secondary{background:transparent}
+    .btn.ghost{background:transparent;border-color:rgba(255,255,255,.06);color:var(--muted)}
+    .stack{display:flex;gap:10px;flex-wrap:wrap}
+    .score{font-size:40px;font-weight:800}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);font-size:12px;color:var(--muted)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 8px;border-bottom:1px dashed rgba(255,255,255,.06);text-align:left;font-size:14px}
+    th{color:var(--muted);font-weight:600}
+    .empty{color:var(--muted);text-align:center;padding:18px}
+    footer{max-width:960px;margin:20px auto 60px;padding:0 16px;color:var(--muted);font-size:13px}
+    .badge{font-size:12px;padding:6px 10px;border-radius:999px}
+    .ok{background:rgba(16,185,129,.15);color:#c4f6e8;border:1px solid rgba(16,185,129,.35)}
+    .bad{background:rgba(239,68,68,.15);color:#ffd6d6;border:1px solid rgba(239,68,68,.35)}
+    .avg{background:rgba(234,179,8,.15);color:#fff2cc;border:1px solid rgba(234,179,8,.35)}
+    .link{color:#c7d2fe}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Idea Validator <span class="pill">one‑file app</span></h1>
+    <p class="sub">Quickly score ideas, store them locally, and export when ready.</p>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <div class="inner">
+        <h2 style="margin:0 0 12px">New Idea</h2>
+        <div class="row">
+          <div>
+            <label>Idea name</label>
+            <input id="name" placeholder="e.g. Concierge AI for market research" />
+          </div>
+          <div>
+            <label>Target audience</label>
+            <input id="audience" placeholder="e.g. solo founders" />
+          </div>
+        </div>
+        <label>Problem (what struggle are you solving?)</label>
+        <textarea id="problem" placeholder="Describe the pain clearly in one or two sentences..."></textarea>
+
+        <div class="row">
+          <div>
+            <label>How often does the pain happen?</label>
+            <select id="frequency">
+              <option value="1">Rarely</option>
+              <option value="2">Sometimes</option>
+              <option value="3">Weekly</option>
+              <option value="4">Daily</option>
+              <option value="5">Many times/day</option>
+            </select>
+          </div>
+          <div>
+            <label>How urgent is it?</label>
+            <select id="urgency">
+              <option value="1">Nice to have</option>
+              <option value="2">Mild</option>
+              <option value="3">Important</option>
+              <option value="4">Painful</option>
+              <option value="5">Severe / burning</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Do current alternatives exist?</label>
+            <select id="alts">
+              <option value="5">None or terrible</option>
+              <option value="3">Some, mediocre</option>
+              <option value="1">Plenty, strong</option>
+            </select>
+          </div>
+          <div>
+            <label>Would they pay?</label>
+            <select id="pay">
+              <option value="1">Unlikely</option>
+              <option value="3">Maybe</option>
+              <option value="5">Very likely</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top:14px">
+          <button class="btn" onclick="scoreIdea()">Score idea</button>
+          <button class="btn secondary" onclick="saveIdea()">Save</button>
+          <button class="btn ghost" onclick="resetForm()">Clear</button>
+        </div>
+
+        <div id="scoreWrap" style="margin-top:14px;display:none">
+          <div class="stack" style="align-items:center">
+            <div class="score" id="score">72</div>
+            <span class="badge avg" id="grade">Promising</span>
+            <span class="pill" id="why">— based on frequency, urgency, alternatives & willingness to pay</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="inner">
+        <h2 style="margin:0 0 12px">Saved Ideas</h2>
+        <div class="stack" style="margin-bottom:10px">
+          <button class="btn ghost" onclick="exportCSV()">Export CSV</button>
+          <button class="btn ghost" onclick="clearIdeas()">Clear all</button>
+        </div>
+        <div id="list"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Built with ♥ as a single HTML file. Data is stored locally in your browser.
+  </footer>
+
+  <script>
+    const els = {
+      name: document.getElementById('name'),
+      audience: document.getElementById('audience'),
+      problem: document.getElementById('problem'),
+      frequency: document.getElementById('frequency'),
+      urgency: document.getElementById('urgency'),
+      alts: document.getElementById('alts'),
+      pay: document.getElementById('pay'),
+      list: document.getElementById('list'),
+      scoreWrap: document.getElementById('scoreWrap'),
+      score: document.getElementById('score'),
+      grade: document.getElementById('grade'),
+      why: document.getElementById('why'),
+    }
+
+    const STORAGE_KEY = 'idea_validator_v1';
+
+    function computeScore(){
+      const f = Number(els.frequency.value);
+      const u = Number(els.urgency.value);
+      const a = Number(els.alts.value);
+      const p = Number(els.pay.value);
+      // weights tuned for a 0-100 score
+      const score = Math.round((f*6 + u*8 + a*5 + p*7) / (5* (6+8+5+7)) * 100);
+      return score;
+    }
+
+    function gradeFromScore(s){
+      if(s >= 80) return {text:'Hot', cls:'ok'};
+      if(s >= 60) return {text:'Promising', cls:'avg'};
+      return {text:'Weak', cls:'bad'};
+    }
+
+    function scoreIdea(){
+      const s = computeScore();
+      els.score.textContent = s;
+      const g = gradeFromScore(s);
+      els.grade.textContent = g.text;
+      els.grade.className = 'badge ' + g.cls;
+      els.scoreWrap.style.display = 'block';
+    }
+
+    function readIdeas(){
+      try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }catch{ return [] }
+    }
+
+    function writeIdeas(items){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    function saveIdea(){
+      const item = {
+        id: crypto.randomUUID(),
+        name: els.name.value.trim(),
+        audience: els.audience.value.trim(),
+        problem: els.problem.value.trim(),
+        frequency: Number(els.frequency.value),
+        urgency: Number(els.urgency.value),
+        alts: Number(els.alts.value),
+        pay: Number(els.pay.value),
+        score: computeScore(),
+        createdAt: new Date().toISOString()
+      };
+      if(!item.name){ alert('Give the idea a name.'); return }
+      const items = readIdeas();
+      items.unshift(item);
+      writeIdeas(items);
+      renderList();
+      resetForm(false);
+    }
+
+    function resetForm(hide=true){
+      els.name.value = '';
+      els.audience.value = '';
+      els.problem.value = '';
+      els.frequency.value = '3';
+      els.urgency.value = '3';
+      els.alts.value = '3';
+      els.pay.value = '3';
+      if(hide){ els.scoreWrap.style.display = 'none'; }
+    }
+
+    function removeIdea(id){
+      const items = readIdeas().filter(x => x.id !== id);
+      writeIdeas(items);
+      renderList();
+    }
+
+    function exportCSV(){
+      const items = readIdeas();
+      if(!items.length){ alert('No ideas to export yet.'); return }
+      const header = ['Created','Name','Audience','Problem','Frequency','Urgency','Alternatives','Pay','Score'];
+      const rows = items.map(x => [x.createdAt, x.name, x.audience, x.problem.replace(/\n/g,' '), x.frequency, x.urgency, x.alts, x.pay, x.score]);
+      const csv = [header, ...rows].map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'ideas.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function clearIdeas(){
+      if(confirm('Delete all saved ideas?')){
+        writeIdeas([]); renderList();
+      }
+    }
+
+    function pill(text){
+      return `<span class="pill">${text}</span>`
+    }
+
+    function renderList(){
+      const items = readIdeas();
+      if(!items.length){ els.list.innerHTML = `<div class="empty">No ideas yet. Save a few, then export to CSV.</div>`; return }
+      els.list.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Idea</th>
+              <th>Audience</th>
+              <th>Score</th>
+              <th>When</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(x => `
+              <tr>
+                <td title="${x.problem.replace(/\"/g,'\"')}"><strong>${x.name}</strong></td>
+                <td>${x.audience || '—'}</td>
+                <td>${x.score} ${x.score>=80?pill('Hot'):x.score>=60?pill('Promising'):pill('Weak')}</td>
+                <td>${new Date(x.createdAt).toLocaleString()}</td>
+                <td><button class="btn ghost" onclick="removeIdea('${x.id}')">Delete</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`
+    }
+
+    renderList();
+  </script>
+</body>
+</html>
